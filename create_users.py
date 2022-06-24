@@ -3,16 +3,13 @@
 import argparse
 import base64
 import csv
-import json
 import os
 import re
 import secrets
 import smtplib
 import string
 import sys
-import time
 from email.mime import multipart, text
-from email.mime.application import MIMEApplication
 
 import requests
 import urllib3
@@ -146,7 +143,7 @@ Enabled  : [[enabled]]
 ----------------------------------
 
 *1. Password Rest = True の場合は初回ログイン時にパスワード再設定を行ってください
-*2. Enaabled = False の場合は管理者(CSIRT)へログイン有効化申請を行ってください
+*2. Enabled = False の場合は管理者(CSIRT)へログイン有効化申請を行ってください
 
 URL : [[url_rapid7_ivm]]
     """
