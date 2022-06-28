@@ -16,7 +16,7 @@ import urllib3
 urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser(
-    description='Rapid7 Insight VM API Tools - reset password')
+    description='Rapid7 Insight VM API Tools - password reset')
 
 parser.add_argument('--host',
                     action='store',
@@ -127,12 +127,7 @@ def main(args: dict):
 ----------------------------------
 Username : [[login]]
 Password : [[password]]
-Password Rest : [[reset_password]]
-Enabled  : [[enabled]]
 ----------------------------------
-
-*1. Password Rest = True の場合は初回ログイン時にパスワード再設定を行ってください
-*2. Enabled = False の場合は管理者(CSIRT)へログイン有効化申請を行ってください
 
 URL : [[url_rapid7_ivm]]
     """
@@ -147,8 +142,7 @@ URL : [[url_rapid7_ivm]]
             "name" :  None,
             "email": None,
             "password": None,
-            "enabled": True,
-            "reset_password": True,
+            "enabled": None,
             "send_email": True
         }
 
@@ -173,7 +167,7 @@ URL : [[url_rapid7_ivm]]
         user_data["name"] = data["name"]
         user_data["email"] = data["email"]
         user_data["password"] = get_random_password_string(args.generate_password_length)
-        user_data["enabled"] = data["enabled"]
+        user_data["locked"] = data["locked"]
 
         print("[INFO]", "User {:s} is found".format(login))
         check: str = input("Can I really reset password? (y/Y):")
@@ -187,6 +181,14 @@ URL : [[url_rapid7_ivm]]
             print(ex)
             continue
         print("[SUCCESS]", "User {:s} is password reset".format(login))
+
+        if user_data["locked"] == True:
+            try:
+                unlock_account(login_id, url_rapid7_ivm_api, headers)
+            except Exception as ex:
+                print(ex)
+                continue
+            print("[SUCCESS]", "User {:s} is unlock".format(login))
 
         if user_data["send_email"] == True:
             send_mail(user_data, url_rapid7_ivm, mail_subject, mail_body_original)
@@ -286,6 +288,17 @@ def password_reset(login_id: int, password: str, url: str, headers: dict) -> Non
     }
 
     response = requests.put(url, verify=args.no_verify_certificate, headers=headers, json=payload)
+    response_json = response.json()
+
+    if "status" in response_json and response_json["status"] != 200:
+        print(response_json)
+        raise Exception("[WARNING] {:d} {:s}".format(response_json["status"], response_json["message"]))
+
+
+def unlock_account(login_id: int, url: str, headers: dict) -> None:
+    url += "users/{:d}/lock".format(login_id)
+
+    response = requests.delete(url, verify=args.no_verify_certificate, headers=headers)
     response_json = response.json()
 
     if "status" in response_json and response_json["status"] != 200:
